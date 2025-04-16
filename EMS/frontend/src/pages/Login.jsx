@@ -1,12 +1,20 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, {useState } from "react";
+
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authContext";
 
 const Login = () => {
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [error, setError] = useState(null)
+    const {login} = useAuth()
+    
+    const navigate = useNavigate()
 
     const handleSubmit = async (e) => {
+
         e.preventDefault()
 
         try
@@ -14,9 +22,29 @@ const Login = () => {
             const response = await axios.post("http://localhost:5000/api/auth/login",
                 {email, password}
             );
-            console.log(response)
+            
+            if(response.data.success){
+                login(response.data.user)
+                localStorage.setItem("token",response.data.token)
+
+                if(response.data.user.role === "admin"){
+                    navigate("/admin-dashboard")
+                }
+                else
+                {
+                    navigate("/employee-dashboard")
+                }
+         }
+ 
         }catch(error){
-            console.log(error)
+            
+            if(error.response && !error.response.data.success){
+                setError(error.response.data.error)
+            }
+            else{
+                setError("Server Error")
+            }
+    
         }
     }
 
@@ -26,6 +54,7 @@ const Login = () => {
            <h2 className="font-sevillana text-3xl text-white">Employee Management System</h2>
             <div className="border show p-6 w-80 bg-white">
             <h2 className="text-2xl font-bold mb-4">Login</h2>
+            {error && <p className="text-red-500">{error}</p>}
             <form onSubmit={handleSubmit}>
                 
                 <div className="mb-4">
@@ -34,6 +63,7 @@ const Login = () => {
                     " className="w-full px-3 py-2 border"
                      placeholder="Enter email"
                      onChange={(e)=> setEmail(e.target.value)}
+                     required
                      />
                 </div>
                 <div className="mb-4">
@@ -41,6 +71,7 @@ const Login = () => {
                     <input type="password"
                      className="w-full px-3 py-2 border" placeholder="****"
                      onChange={(e)=> setPassword(e.target.value)}
+                     required
                      />
                 </div>
 
